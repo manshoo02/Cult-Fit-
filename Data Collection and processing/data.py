@@ -1,6 +1,7 @@
 import pandas as pd
 data1 = pd.read_csv("Data Collection and processing\Classes April-May 2018.csv")
 data2 = pd.read_csv("Data Collection and processing\Classes June 2018.csv")
+import re
 #Deleting duplicates
 data1 = data1.drop_duplicates()
 data2 = data2.drop_duplicates()
@@ -52,6 +53,32 @@ quality_check = {
 # Print the quality report
 for key, value in quality_check.items():
     print(f"{key}: \n{value}\n")
+
+
+def split_activity_description(description):
+    description = description.strip()  # Remove leading and trailing whitespace
+    # Regular expression to find time ranges (e.g., "6.00-7.00pm")
+    match = re.search(r'\b\d{1,2}[:.]\d{2}\s*-\s*\d{1,2}[:.]\d{2}(?:am|pm)?\b', description, re.IGNORECASE)
+    if match:
+        time = match.group(0)
+        class_name = description.replace(time, '').strip()
+        return pd.Series([class_name, time])
+    else:
+        return pd.Series([description, None])
+
+# Get the index of the 'Activity Description' column
+col_index = merged_df.columns.get_loc('Activity Description')
+
+# Apply the function to the DataFrame and get two new columns
+new_columns = merged_df['Activity Description'].apply(split_activity_description)
+new_columns.columns = ['Class Name', 'Class Timings']
+
+# Insert the new columns into the DataFrame at the position of the original column
+merged_df.insert(col_index, 'Class Name', new_columns['Class Name'])
+merged_df.insert(col_index + 1, 'Class Timings', new_columns['Class Timings'])
+
+# Drop the original 'Activity Description' column
+merged_df.drop(columns=['Activity Description'], inplace=True)
 
 
 data1.to_csv('C:/Users/gulat/Documents/Cult internship/Cleaned_datasets/Csv data/Data1.csv',index=False)
